@@ -8,9 +8,9 @@ import ziltoid.ds.CharCharMap;
 public class ExactEncoder {
     private ExactEncoder(){}
 
-    private static final CharCharMap ipaToDigit = new CharCharMap(
+    static final CharCharMap ipaToDigit = new CharCharMap(
             "ɾⱱɽrʀʙɸβʂʐħʕhɦʋɹɻjɰɬɮʎʟlɭcɟɴʔnɳɲŋmɱxɣθðfvçʝgqʃʒszχʁʈɖpbtdkɢɒoɔʊɞuyʏœøɵɶɑɤʌəɜɯɐiɪɛeɘɨæaYʧʨʤ".toCharArray(),
-            "\u000E\u0014\u000E\u000E\u000E\u000E\u0013\u0012\u0018\u0019\u000C\u000C\u000C\u000C\u000F\u000E\u000E\u0004\u000F\u000F\u000F\u0004\u000F\u000F\u000F\u001D\u001C\u0011\u0000\u0011\u0011\u0011\r\n\u0010\u0017\u0017\u0015\u0015\u0016\u0014\u001D\u0004\u001C\u0017\u001A\u001B\u0018\u0019\u0017\u0017\u001F\u001E\u0013\u0012\u001F\u001E\u001D\u001C\u0002\u000B\u0002\u0001\u0001\n\n\n\u0003\u0003\u0001\u0001\u0002\u0001\u0008\u0001\u0003\u0001\u0008\u0005\u0004\u0003\u0006\u0001\n\u0007\u0007\u0009\u0017\u0017\u001B".toCharArray());
+            "\u000E\u0014\u000E\u000E\u000E\u000E\u0013\u0012\u0018\u0019\u000C\u000C\u000C\u000C\u000F\u000E\u000E\u0004\u000F\u000F\u000F\u0004\u000F\u000F\u000F\u001D\u001C\u0011\u0000\u0011\u0011\u0011\u0011\u0010\u0010\u0017\u0017\u0015\u0015\u0016\u0014\u001D\u0004\u001C\u0017\u001A\u001B\u0018\u0019\u0017\u0017\u001F\u001E\u0013\u0012\u001F\u001E\u001D\u001C\u0002\u000B\u0002\u0001\u0001\n\n\n\u0003\u0003\u0001\u0001\u0002\u0001\u0008\u0001\u0003\u0001\u0008\u0005\u0004\u0003\u0006\u0001\n\u0007\u0007\u0009\u0017\u0017\u001B".toCharArray());
     static {
         ipaToDigit.defaultReturnValue('\000');
     }
@@ -76,6 +76,48 @@ public class ExactEncoder {
         if(sz == 0) return 0;
         if(sz == 1) return ipaToDigit.get(word.charAt(0)) << 1;
         char[] remap = new char[sz];
+        int working = 0, start = 0, middle = 0, transition = 0, counter = 0;
+        for(int i = 0; i < sz; i++)
+        {
+            remap[i] = ipaToDigit.get(word.charAt(i));
+        }
+        if(remap[0] == 24) // initial s
+        {
+            working = 1;
+            start++;
+        }
+        if(sz >= 3 && remap[sz-1] == 24) // final s
+        {
+            working |= 0x80000000;
+            sz--;
+        }
+        for (int i = 0; start < sz && i < 3; i++, start++) {
+            working |= ((middle = remap[start]) << (1 + 5 * i));
+        }
+        for (int i = 0; start < sz && i < 12; start++, i++) {
+            middle ^= (transition = remap[start]);
+            if(i < 3)
+                counter += ((middle & 1) << 1) + ((middle & 2) << 4)  + ((middle & 4) << 7) + ((middle & 8) << 10) + ((middle & 16) << 13);
+            else
+                counter += (middle & 1) + ((middle & 2) << 3) + ((middle & 4) << 6) + ((middle & 8) << 9) + ((middle & 16) << 12);
+            middle = transition;
+        }
+        // gray coding each part of the counter
+        counter = (((counter & 14) >> 1) ^ ((counter & 14) >>> 2))
+                | (((((counter >>> 4) & 14) >> 1) ^ ((counter >>> 6) & 3)) << 3)
+                | (((((counter >>> 8) & 14) >> 1) ^ ((counter >>> 10) & 3)) << 6)
+                | (((((counter >>> 12) & 14) >> 1) ^ ((counter >>> 14) & 3)) << 9)
+                | (((((counter >>> 16) & 14) >> 1) ^ ((counter >>> 18) & 3)) << 12);
+        working |= counter << 16;
+        return working;
+    }
+    public static int encodeIPA_old(CharSequence initial)
+    {
+        CharSequence word = processIPA(initial);
+        int sz = word.length();
+        if(sz == 0) return 0;
+        if(sz == 1) return ipaToDigit.get(word.charAt(0)) << 1;
+        char[] remap = new char[sz];
         int working = 0, start = 0, middle = 0;
         for(int i = 0; i < sz; i++)
         {
@@ -94,7 +136,7 @@ public class ExactEncoder {
         for (int i = 0; start < sz - 1 && i < 3; i++, start++) {
             working |= (remap[start] << (1 + 5 * i));
         }
-        for (int i = 137; start < sz - 1; i = (i - 1) & 127, start++) {
+        for (int i = 32; start < sz - 1; i = (i - 1) & 31, start++) {
             middle += i * remap[start];
             middle &= 1023;
         }
