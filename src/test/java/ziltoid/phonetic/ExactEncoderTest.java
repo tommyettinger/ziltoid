@@ -22,21 +22,17 @@ public class ExactEncoderTest {
         System.out.print('|');
         printLimitedBits((n >>> 6) & 31, 5);
         System.out.print('|');
-        printLimitedBits((n >>> 11) & 31, 5);
-        System.out.print('|');
-        printLimitedBits((n >>> 16) & 1023, 10);
-        System.out.print('|');
-        printLimitedBits((n >>> 26) & 31, 5);
+        printLimitedBits((n >>> 11) & 0xFFFFF, 20);
         System.out.print('|');
         printLimitedBits(n >>> 31, 1);
     }
     public void similaritySuite(String a, String b)
     {
-        System.out.println(a + " vs. " + b);
-        printSectionedBits(ExactEncoder.encodeIPA(a));
-        System.out.print(" vs. ");
-        printSectionedBits(ExactEncoder.encodeIPA(b));
-        System.out.println();
+        System.out.printf("%-14s vs. %-14s : ", a, b);
+        //printSectionedBits(ExactEncoder.encodeIPA(a));
+        //System.out.print(" vs. ");
+        //printSectionedBits(ExactEncoder.encodeIPA(b));
+        //System.out.println();
         System.out.println(ExactEncoder.similarity(a, b));
     }
     @Test
@@ -65,6 +61,8 @@ public class ExactEncoderTest {
         similaritySuite("nɛkromænsi", "strɛngθs");
         similaritySuite("nɛkromænsi", "nɛkromænsi");
         similaritySuite("nɛkromænsi", "tɛknomænsi");
+        similaritySuite("nɛkromænsi", "tɛkromænsi");
+        similaritySuite("nɛkromænsi", "nɛkromənsi");
         similaritySuite("strɛngθs", "strɛngθs");
         similaritySuite("strɛngθs", "strɛngθ");
         similaritySuite("strɛngθs", "strɛngθən");
@@ -72,5 +70,8 @@ public class ExactEncoderTest {
         similaritySuite("strenʒ", "strɑng");
         similaritySuite("trenkwɪl", "strɑng");
         similaritySuite("trenkwɪl", "strenʒ");
+        similaritySuite("sɪt", "sæt");
+        similaritySuite("spætər", "pætər");
+        similaritySuite("spɑrtən", "spɑrtʌ");
     }
 }
