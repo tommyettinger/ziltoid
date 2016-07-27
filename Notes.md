@@ -6,11 +6,11 @@ Layout
 Each phoneme, either consonant or vowel, is encoded in a byte.
 This byte will be referred to as P.
 
- * Most significant bit (sign bit of P, or `(p & 128)`) stores 1 for consonants, 0 for vowels.
+ * Most significant bit (sign bit of P, or `(p & 128)`) stores 0 for consonants, 1 for vowels.
  * For consonants:
-   * Bit 6 is always 1.
-     Bits 5, 4, and 3 (`(p & 56) >> 3`) store the manner of the consonant in a rough way.
-     Bits 2, 1, and 0 (`(p & 7)`) are used to index the exact consonant encoded from a sequence of up to 8 consonants, with spaces not used.
+   * Bit 6 is always 1; this is used to help mark the "significance" of consonants relative to vowels.
+   * Bits 5, 4, and 3 (`(p & 56) >> 3`) store the manner of the consonant in a rough way.
+   * Bits 2, 1, and 0 (`(p & 7)`) are used to index the exact consonant encoded from a sequence of up to 8 consonants, with spaces not used.
      * 0 refers to taps, flaps, and trills, such as the English 'r' sound (sometimes).
        * Sequence is `" ɾⱱɽrʀʙ "`.
      * 1 refers to rare fricatives, including 'h' in English but not much else that might be familiar.
@@ -19,7 +19,7 @@ This byte will be referred to as P.
        * Sequence is `"ʋɹɻ jɰw "`.
      * 3 refers to lateral fricatives and lateral approximates, such as English 'l', plus IPA 'c'.
        * Sequence is `"ɬɮʎʟlɭcɟ"`.
-     * 4 refers to nasals, such as 'n' and 'm' in English.
+     * 4 refers to nasals, such as 'n' and 'm' in English, plus the glottal stop.
        * Sequence is `"ɴʔnɳɲŋmɱ"`.
      * 5 refers to various "less forceful" fricatives, such as English's 'th', 'f', and 'v' sounds.
        * Sequence is `"xɣθðfvçʝ"`.
@@ -28,9 +28,14 @@ This byte will be referred to as P.
      * 7 refers to plosives, such as English's 'p', 'b', 't', 'd', and 'k'.
        * Sequence is `"ʈɖpbtdkɢ"`.
  * For vowels:
-   * Bits 6 and 5 (`(p & 96) >> 5`) are used to store a 2-bit number representing tone or accentation. This is not enough for
-     many languages, but it should be enough for most European languages.
-     * Bits 4, 3, 2, 1, and 0 (`(p & 31)`) store the code for the vowel.
+   * Bits 6 and 5 (`(p & 96) >> 5`) are used to store a 2-bit number representing tone or accentation.
+     0 is the default for an untoned vowel.
+     In languages like Spanish with one different tone, then 3 should be used for an accented vowel.
+     In languages like French, where accents in writing can change the actual vowel but don't usually
+     change its tone, then tones might not be used at all (always 0).
+     3 tones (plus "normal tone") is not enough for many languages, but it should be enough for most
+     European languages.
+   * Bits 4, 3, 2, 1, and 0 (`(p & 31)`) store the code for the vowel.
        * 00000 0 / unused
        * 00001 1 ɒ open back rounded vowel
        * 00010 2 o close-mid back rounded vowel
