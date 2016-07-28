@@ -80,10 +80,12 @@ public class ExactEncoderTest {
         similaritySuite("nɛkromænsi", "tɛknomænsi");
         similaritySuite("nɛkromænsi", "tɛkromænsi");
         similaritySuite("nɛkromænsi", "nɛkromənsi");
+        similaritySuite("nɛkromænsi", "nɛkromænsər");
         similaritySuite("strɛngθs", "strɛngθs");
         similaritySuite("strɛngθs", "strɛngθ");
         similaritySuite("strɛngθs", "strɛngθən");
         similaritySuite("strɛngθ", "strɑng");
+        similaritySuite("strɑng", "strɛngθən");
         similaritySuite("strenʒ", "strɑng");
         similaritySuite("rɑng", "strɑng");
         similaritySuite("rɑng", "prɑng");

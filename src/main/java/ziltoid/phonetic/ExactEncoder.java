@@ -45,24 +45,41 @@ public class ExactEncoder {
             new long[]{4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59}, //12
             new long[]{4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59}, //12
     */
+
             new long[]{},
-            new long[]{4, 9, 14},
-            new long[]{4, 14, 9, 19},
-            new long[]{4, 14, 24, 9, 19, 29},
-            new long[]{4, 14, 24, 34, 9, 19, 29, 39},
-            new long[]{4, 14, 24, 34, 44, 9, 19, 29, 39, 49},
-            new long[]{4, 14, 24, 34, 44, 54, 9, 19, 29, 39, 49, 59},
-            new long[]{4, 14, 24, 34, 44, 54, 59, 9, 19, 29, 39, 49},
-            new long[]{4, 14, 24, 34, 44, 49, 54, 59, 9, 19, 29, 39},
-            new long[]{4, 14, 24, 34, 39, 44, 49, 54, 59, 9, 19, 29},
-            new long[]{4, 14, 24, 29, 34, 39, 44, 49, 54, 59, 9, 19},
-            new long[]{4, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 9},
-            new long[]{4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59},
+            new long[]{14, 9, 19}, //1
+            new long[]{14, 9, 59, 24}, //2
+            new long[]{14, 24, 9, 59, 49, 34}, //3
+            new long[]{14, 24, 34, 9, 59, 49, 39, 44}, //4
+            new long[]{14, 24, 34, 44, 9, 59, 49, 39, 29, 54}, //5
+            new long[]{14, 24, 34, 44, 54, 9, 59, 49, 39, 29, 19}, //6
+            new long[]{14, 24, 34, 44, 54, 19, 9, 59, 49, 39, 29}, //7
+            new long[]{14, 24, 34, 44, 54, 29, 19, 9, 59, 49, 39}, //8
+            new long[]{14, 24, 34, 44, 54, 39, 29, 19, 9, 59, 49}, //9
+            new long[]{14, 24, 34, 44, 54, 49, 39, 29, 19, 9, 59}, //10
+            new long[]{14, 24, 34, 44, 54, 59, 49, 39, 29, 19, 9}, //11
+
+/*
+            new long[]{},
+            new long[]{14, 9, 19}, //1
+            new long[]{14, 9, 19, 24}, //2
+            new long[]{14, 24, 9, 19, 29, 34}, //3
+            new long[]{14, 24, 34, 9, 19, 29, 39, 44}, //4
+            new long[]{14, 24, 34, 44, 9, 19, 29, 39, 49, 54}, //5
+            new long[]{14, 24, 34, 44, 54, 9, 19, 29, 39, 49, 59}, //6
+            new long[]{14, 24, 34, 44, 54, 99, 9,   19, 29, 39, 49, 59}, //7
+            new long[]{14, 24, 34, 44, 54, 99, 99, 9,   19, 29, 39, 49, 59}, //8
+            new long[]{14, 24, 34, 44, 54, 99, 99, 99, 9,   19, 29, 39, 49, 59}, //9
+            new long[]{14, 24, 34, 44, 54, 99, 99, 99, 99, 9,   19, 29, 39, 49, 59}, //10
+            new long[]{14, 24, 34, 44, 54, 99, 99, 99, 99, 99, 9,   19, 29, 39, 49, 59}, //11
+*/
     };
 
     //static final long[] offset = new long[]{14, 34, 54, 4, 24, 44, 9, 29, 49, 19, 39, 59};
     //static final long[] offset = new long[]{9, 19, 29, 39, 49, 59, 4, 14, 24, 34, 44, 54};
-    static final long[] pattern = new long[]{4, 4, 4, 9, 9, 9, 14, 14, 14, 19, 19, 24, 29, 34, 39, 44, 49, 54, 59};
+    static final long[] pattern = new long[]{14, 24, 34, 44, 54, 9, 19, 29, 39, 49, 59};
+    //static final long[] weights = new long[]{8,  8,  8,  8,  7,   7,  6,  6,  5,  5,  4};
+    static final long[] weights = new long[]  {6, 5, 4, 3, 3, 3, 1, 2, 2, 3, 3};
     static {
         ipaToDigit.defaultReturnValue('\000');
     }
@@ -131,25 +148,39 @@ public class ExactEncoder {
             return (l << 14) | (l << 29);
         }
         long[] remap = new long[sz], off;
-        long working = 0, middle = 0, transition, counter = 0;
+        long working = 0, middle = 0, transition, counter = 0, vowels = 0, consonants = 0;
         for (int i = 0; i < sz; i++) {
             remap[i] = ipaToDigit.get(word.charAt(i));
         }
         if (remap[0] == 16) // initial s
         {
-            working = 1L;
+            working = 2L;
             start = startingS = 1;
         }
-        if (sz >= 3 && remap[sz - 1] == 16) // final s
+        else if (remap[0] == 17) // initial s
         {
-            working |= 2L;
+            working = 6L;
+            start = startingS = 1;
+        }
+        for (int i = 0; i < sz; i++) {
+            if(remap[i] < 14) { // includes all vowels, glottal stop, 'h', and 'w'
+                if(++vowels >= 7)
+                    break;
+            }
+            else {
+                if (++consonants >= 7)
+                    break;
+            }
+        }
+        working |= (vowels << 6) | (consonants << 3);
+
+        if (sz >= 2 && remap[sz - 1] >>> 1 == 8) // final s or z
+        {
+            working |= 1L;
             sz--;
         }
-        if (sz - startingS > 12) {
-            if (sz - startingS > 15)
-                working |= 12;
-            off = offsets[12];
-        }
+        if (sz - startingS >= 11)
+            off = offsets[11];
         else
             off = offsets[sz - startingS];
 
@@ -242,18 +273,36 @@ public class ExactEncoder {
         }
         return working;
     }
-
     public static float similarity(CharSequence a, CharSequence b)
     {
-        long aCode = encodeIPA(a), bCode = encodeIPA(b), ta, tb, pat,
-                union = (Math.max(aCode & 3, bCode & 3) << 4) + (Math.max(aCode & 12, bCode & 12) << 2) + (Math.max(a.length(), b.length()) << 5),
-                intersection = (Math.min(aCode & 3, bCode & 3) << 4) + (Math.min(aCode & 12, bCode & 12) << 2) + (Math.min(a.length(), b.length()) << 5);
-        for (int i = 0; i < 19; i++) {
+        return similarity(encodeIPA(a), encodeIPA(b));
+    }
+
+    public static float similarity(long a, long b)
+    {
+        long ta, tb, pat, weight, udiff, idiff, out = 14,
+                union = (Math.max(a & 7, b & 7) << 3) + (Math.max(a & 56, b & 56) << 2) + (Math.max(a & 448, b & 448)),
+                intersection = (Math.min(a & 7, b & 7) << 3) + (Math.min(a & 56, b & 56) << 2) + (Math.min(a & 448, b & 448));
+        for (int i = 0; i < 11; i++) {
             pat = pattern[i];
-            ta = (aCode >>> pat) & 31;
-            tb = (bCode >>> pat) & 31;
-            union += (((Math.max(ta & 3, tb & 3) + Math.max(ta >>> 2, tb >>> 2)) << 2) + 3);
-            intersection += (((Math.min(ta & 3, tb & 3) + Math.min(ta >>> 2, tb >>> 2)) << 2) + 3);
+            weight = weights[i];
+            ta = (a >>> pat) & 31;
+            tb = (b >>> pat) & 31;
+            udiff = (Math.max(ta, tb) + 1);
+            idiff = (Math.min(ta, tb) + 1);
+            //udiff = (((Math.max(ta & 3, tb & 3) + Math.max(ta >>> 2, tb >>> 2)) << 2) + 3);
+            //idiff = (((Math.min(ta & 3, tb & 3) + Math.min(ta >>> 2, tb >>> 2)) << 2) + 3);
+            if(i == 0 || udiff - idiff <= out)
+            {
+                union += udiff * weight;
+                intersection += idiff * weight;
+            }
+            else
+            {
+                out = udiff - idiff;
+                union += (udiff * weight) >> 1;
+                intersection += (idiff * weight) >> 1;
+            }
         }
         return intersection / (float)union;
     }
