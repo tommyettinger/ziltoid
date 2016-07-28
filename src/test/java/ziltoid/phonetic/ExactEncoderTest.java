@@ -10,9 +10,17 @@ public class ExactEncoderTest {
     {
         System.out.println(String.format("%32s", Integer.toBinaryString(n)).replace(' ', '0'));
     }
+    public void printBits(long n)
+    {
+        System.out.println(String.format("%64s", Long.toBinaryString(n)).replace(' ', '0'));
+    }
     public void printLimitedBits(int n, int limit)
     {
         System.out.print(String.format("%" + limit + "s", Integer.toBinaryString(n)).replace(' ', '0'));
+    }
+    public void printLimitedBits(long n, int limit)
+    {
+        System.out.print(String.format("%" + limit + "s", Long.toBinaryString(n)).replace(' ', '0'));
     }
     public void printSectionedBits(int n)
     {
@@ -26,6 +34,15 @@ public class ExactEncoderTest {
         System.out.print('|');
         printLimitedBits(n >>> 31, 1);
     }
+    public void printSectionedBits(long n) {
+        printLimitedBits(n & 3, 2);
+        System.out.print('|');
+        printLimitedBits((n >>> 2) & 3, 2);
+        for (int i = 4; i < 64; i += 5) {
+            System.out.print('|');
+            printLimitedBits((n >>> i) & 31, 5);
+        }
+    }
     public void similaritySuite(String a, String b)
     {
         System.out.printf("%-14s vs. %-14s : ", a, b);
@@ -38,7 +55,7 @@ public class ExactEncoderTest {
     @Test
     public void testEncode()
     {
-        int necromancy = ExactEncoder.encodeIPA("nɛkromænsi");
+        long necromancy = ExactEncoder.encodeIPA("nɛkromænsi");
         System.out.println(necromancy);
         printBits(necromancy);
         printSectionedBits(necromancy);
@@ -49,7 +66,7 @@ public class ExactEncoderTest {
             System.out.println();
         }
         */
-        int strengths = ExactEncoder.encodeIPA("strɛngθs");
+        long strengths = ExactEncoder.encodeIPA("strɛngθs");
         System.out.println(strengths);
         printBits(strengths);
         printSectionedBits(strengths);
@@ -68,10 +85,14 @@ public class ExactEncoderTest {
         similaritySuite("strɛngθs", "strɛngθən");
         similaritySuite("strɛngθ", "strɑng");
         similaritySuite("strenʒ", "strɑng");
+        similaritySuite("rɑng", "strɑng");
+        similaritySuite("rɑng", "prɑng");
         similaritySuite("trenkwɪl", "strɑng");
         similaritySuite("trenkwɪl", "strenʒ");
         similaritySuite("sɪt", "sæt");
         similaritySuite("spætər", "pætər");
         similaritySuite("spɑrtən", "spɑrtʌ");
+        similaritySuite("wɪnk", "wɪnd");
+        similaritySuite("gɑrbəʒ", "træɭ");
     }
 }
