@@ -47,9 +47,9 @@ public class ExactEncoder {
     */
 
             new long[]{},
-            new long[]{14, 9, 19}, //1
-            new long[]{14, 9, 59, 24}, //2
-            new long[]{14, 24, 9, 59, 49, 34}, //3
+            new long[]{14, 9, 59, 24}, //1
+            new long[]{14, 9, 59, 24, 34, 49}, //2
+            new long[]{14, 24, 9, 59, 49, 39, -1, -1, 34}, //3
             new long[]{14, 24, 34, 9, 59, 49, 39, 44}, //4
             new long[]{14, 24, 34, 44, 9, 59, 49, 39, 29, 54}, //5
             new long[]{14, 24, 34, 44, 54, 9, 59, 49, 39, 29, 19}, //6
@@ -79,7 +79,7 @@ public class ExactEncoder {
     //static final long[] offset = new long[]{9, 19, 29, 39, 49, 59, 4, 14, 24, 34, 44, 54};
     static final long[] pattern = new long[]{14, 24, 34, 44, 54, 9, 19, 29, 39, 49, 59};
     //static final long[] weights = new long[]{8,  8,  8,  8,  7,   7,  6,  6,  5,  5,  4};
-    static final long[] weights = new long[]  {6, 5, 4, 3, 3, 3, 1, 2, 2, 3, 3};
+    static final long[] weights = new long[]  {7, 6, 5, 4, 3, 3, 3, 3, 3, 4, 5};
     static {
         ipaToDigit.defaultReturnValue('\000');
     }
@@ -98,7 +98,7 @@ public class ExactEncoder {
                     case 'ɐ':
                     case 'ɑ':
                     case 'ɔ':
-                        sb.setCharAt(i-1, '\u0009'); // special replacement for common sound "i" as in "sigh" or "y" as in "by"
+                        sb.setCharAt(i-1, 'Y'); // special replacement for common sound "i" as in "sigh" or "y" as in "by"
                         sb.deleteCharAt(i);
                         break;
                     default: i++;
@@ -122,7 +122,7 @@ public class ExactEncoder {
                 switch (c)
                 {
                     case 't':
-                        sb.setCharAt(i-1, '\u0017'); // 'ch' or 'x' character used in "loch" and "ach"
+                        sb.setCharAt(i-1, 'ʧ'); // 'ch' or 'x' character used in "loch" and "ach"
                         sb.deleteCharAt(i);
                         break;
                     default: i++;
@@ -140,7 +140,7 @@ public class ExactEncoder {
     }
     public static long encodeIPA(CharSequence initial) {
         CharSequence word = processIPA(initial);
-        int sz = word.length(), start = 0, startingS = 0;
+        int sz = word.length(), index = 0, sibilantStart = 0;
         if (sz == 0) return 0;
         if (sz == 1)
         {
@@ -148,19 +148,24 @@ public class ExactEncoder {
             return (l << 14) | (l << 29);
         }
         long[] remap = new long[sz], off;
-        long working = 0, middle = 0, transition, counter = 0, vowels = 0, consonants = 0;
+        long working = 0, vowels = 0, consonants = 0, o;
         for (int i = 0; i < sz; i++) {
             remap[i] = ipaToDigit.get(word.charAt(i));
         }
         if (remap[0] == 16) // initial s
         {
             working = 2L;
-            start = startingS = 1;
+            index = sibilantStart = 1;
         }
-        else if (remap[0] == 17) // initial s
+        else if (remap[0] == 17) // initial z
         {
             working = 6L;
-            start = startingS = 1;
+            index = sibilantStart = 1;
+        }
+        else if (remap[0] == 18) // initial sh
+        {
+            working = 4L;
+            index = sibilantStart = 1;
         }
         for (int i = 0; i < sz; i++) {
             if(remap[i] < 14) { // includes all vowels, glottal stop, 'h', and 'w'
@@ -172,21 +177,22 @@ public class ExactEncoder {
                     break;
             }
         }
-        working |= (vowels << 6) | (consonants << 3);
+        working |= (consonants << 6) | (vowels << 3);
 
         if (sz >= 2 && remap[sz - 1] >>> 1 == 8) // final s or z
         {
             working |= 1L;
             sz--;
         }
-        if (sz - startingS >= 11)
+        if (sz - index >= 11)
             off = offsets[11];
         else
-            off = offsets[sz - startingS];
+            off = offsets[sz - index];
 
-        for (int i = 0; i < off.length; i++) {
-            working |= (remap[start] << off[i]);
-            start = (start == sz - 1) ? startingS : start + 1;
+        for (int i = 0; i < off.length; i++, index = (index == sz - 1) ? sibilantStart : index + 1) {
+            if((o = off[i]) < 0)
+                continue;
+            working |= (remap[index] << o);
         }
         return working;
     }
@@ -278,9 +284,14 @@ public class ExactEncoder {
         return similarity(encodeIPA(a), encodeIPA(b));
     }
 
+    static String binaryString(long data)
+    {
+        return String.format("%64s", Long.toBinaryString(data)).replace(' ', '0');
+    }
+
     public static float similarity(long a, long b)
     {
-        long ta, tb, pat, weight, udiff, idiff, out = 14,
+        long ta, tb, pat, weight, udiff, idiff, worsti = 1, worstu = 7, worstw = 0,
                 union = (Math.max(a & 7, b & 7) << 3) + (Math.max(a & 56, b & 56) << 2) + (Math.max(a & 448, b & 448)),
                 intersection = (Math.min(a & 7, b & 7) << 3) + (Math.min(a & 56, b & 56) << 2) + (Math.min(a & 448, b & 448));
         for (int i = 0; i < 11; i++) {
@@ -288,10 +299,32 @@ public class ExactEncoder {
             weight = weights[i];
             ta = (a >>> pat) & 31;
             tb = (b >>> pat) & 31;
-            udiff = (Math.max(ta, tb) + 1);
-            idiff = (Math.min(ta, tb) + 1);
+            if(ta == 0)
+            {
+                idiff =  1;
+                udiff = (tb >> 1) + 1;
+            }
+            else if(tb == 0)
+            {
+                idiff = 1;
+                udiff = (ta >> 1) + 1;
+            }
+            else {
+                udiff = (Math.max(ta, tb) + 1);
+                idiff = (Math.min(ta, tb) + 1);
+            }
+            if(idiff - udiff < worsti - worstu)
+            {
+                worsti = idiff;
+                worstu = udiff;
+                worstw = weight;
+            }
+            union += udiff * weight;
+            intersection += idiff * weight;
+
             //udiff = (((Math.max(ta & 3, tb & 3) + Math.max(ta >>> 2, tb >>> 2)) << 2) + 3);
             //idiff = (((Math.min(ta & 3, tb & 3) + Math.min(ta >>> 2, tb >>> 2)) << 2) + 3);
+            /*
             if(i == 0 || udiff - idiff <= out)
             {
                 union += udiff * weight;
@@ -303,7 +336,10 @@ public class ExactEncoder {
                 union += (udiff * weight) >> 1;
                 intersection += (idiff * weight) >> 1;
             }
+            */
         }
+        union -= worstu * (worstw >> 1);
+        intersection -= worsti * (worstw >> 1);
         return intersection / (float)union;
     }
     public static double similarity_old(CharSequence a, CharSequence b)

@@ -87,14 +87,20 @@ public class ExactEncoderTest {
         similaritySuite("strɛngθ", "strɑng");
         similaritySuite("strɑng", "strɛngθən");
         similaritySuite("strenʒ", "strɑng");
+        similaritySuite("strɪng", "strɑng");
         similaritySuite("rɑng", "strɑng");
         similaritySuite("rɑng", "prɑng");
         similaritySuite("trenkwɪl", "strɑng");
         similaritySuite("trenkwɪl", "strenʒ");
         similaritySuite("sɪt", "sæt");
+        similaritySuite("ɪt", "æt");
         similaritySuite("spætər", "pætər");
         similaritySuite("spɑrtən", "spɑrtʌ");
         similaritySuite("wɪnk", "wɪnd");
-        similaritySuite("gɑrbəʒ", "træɭ");
+        similaritySuite("ssssss", "ʃʃʃʃʃʃ");
+        similaritySuite("swɛt", "ʃwɛdi");
+        similaritySuite("swɛt", "swɛti");
+        similaritySuite("gɑrbəʒ", "træʃ");
+        similaritySuite("mɪnkɑvski", "mɪnkɑfski");
     }
 }
