@@ -16,7 +16,7 @@ Both consonants and vowels can be looked up in the table below, with more signif
 ```
       0123
 000 0  əɑɛ      put pot pet
-001 1 ʌYuo  won why woo woe
+001 1 ʌYuo  but buy boo bow
 010 2 ɪieæ  wit wee way wan
 011 3 hwrl  hay wee ray lie
 100 4 szʃʒ  sue zoo shy joe

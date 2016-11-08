@@ -102,5 +102,6 @@ public class ExactEncoderTest {
         similaritySuite("swɛt", "swɛti");
         similaritySuite("gɑrbəʒ", "træʃ");
         similaritySuite("mɪnkɑvski", "mɪnkɑfski");
+        similaritySuite("θrɛtəning", "θrɛtən");
     }
 }
